@@ -1,9 +1,9 @@
 ![WiM](wim.png)
 
 
-# Project Title
+# NLDI Polygon Query
 
-One Paragraph of project description goes here
+This is a python package for querying the Network Linked Data Index for hydrographic data. The input data to this package is a GeoJSON FeatureCollection, and so is the output. The package will parse the input FeatureCollection, separate multipolygons and make Get requests to the NLDI for catchments and flowlines (depending on the input parameters) that overlap with the query polygons. Also, a trace downstream distance can be set in order to return flowlines a set distance downstream for the query polygons.
 
 ### Prerequisites
 
