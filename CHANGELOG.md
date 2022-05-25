@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added 
 
-- Added an additional parameter to the POST operation. This takes the form of a tuple, with the first value being a boolean to return flowlines and the second being a float to return the flowlines downstream to the float value distance.
+- Added two params to post operation: bool value to return flowlines and float value to return distance downstream flowlines.
 
 ### Changed  
 
