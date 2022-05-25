@@ -7,30 +7,59 @@ This is a python package for querying the Network Linked Data Index for hydrogra
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+Python 3
+Git
 
+## Installing
+To run the services locally, run the following in your Windows command prompt:
+
+```bash
+# clone repository
+git clone https://github.com/USGS-WiM/nldi_polygon_query.git
+cd SS-WeightingServces
+# create a virtual environment
+python -m venv env
+# active the virtual environment
+.\env\Scripts\activate
+# install the project's dependencies
+pip install -r requirements.txt
+# deploy at a local server
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
-Give examples
+
+Alternate instructions for the Windows [Anaconda3](https://docs.anaconda.com/anaconda/install/index.html) prompt:
+
+```bash
+# clone repository
+git clone https://github.com/USGS-WiM/nldi_polygon_query.git
+cd SS-WeightingServces
+# create a new Conda environment
+conda create --name nldi_polygon_query
+# active the Conda environment
+conda activate nldi_polygon_query
+# install the project's dependencies
+conda install pip
+pip install -r requirements.txt
+# deploy at a local server
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-## Getting Started
+Add --reload to the end of the uvicorn main:app --host 0.0.0.0 --port 8000 to enable hot reload for local testing purposes only.
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Once the above code has been run successfully, the service documentation will be available at http://127.0.0.1:8000/docs/.
+### Getting Started
 
-### Installing
+Once the API is running locally, you can make requests to it. To use the API, a geojson file containing a FeatureCollection can be submitted with a `POST` call, and the response will also be in the format of a FeatureCollection. Here is a quick example of how to do so in Python.
 
-A step by step series of examples that tell you have to get a development env running
+```bash
+import requests
 
-Say what the step will be
+url = 'http://127.0.0.1:8000/nldi_poly_query'
 
-```
-Give the example
-```
+file = {'file': open(<file path>, 'r')}
 
-And repeat
-
-```
-until finished
+params = {'get_flowlines': True, 'downstream_dist': 55}
+resp = requests.post(url=url, files=file, data=params) 
 ```
 
 ## Building and testing
@@ -45,66 +74,51 @@ Explain how to run unit tests, if applicable
 
 ## Development Workflow
 
-Explain the desired workflow. Workflow may deviate from the instructions below depending on the projects needs.
-
-**Instructions below are for developers actively working on the repo.**
-
-An issue will be assigned to you via Github. Your workflow begins after assignment:
-
-1. Create a branch with the issue number as the branch name (e.g. `134`)
-2. Move issue into 'In Progress' column of project board
-3. Do the work
-    - While you work, you may wish to have the app running with live reload. Run `ng serve` to do so.
-4. Write tests for the work
-    - This is a critical step. STNWeb2 uses the [Jasmine library](https://jasmine.github.io/) for unit testing. Please refer there for docs and examples. Also refer to the [Angular testing guide](https://angular.io/guide/testing).
-5. Run the tests to be sure they all pass and that the overall thresholds are met: `ng test`
-6. Be sure the app runs in the browser without errors: `ng serve`
-7. Ensure the app builds without error: `ng build`
-    - If any of the checks above fail, please fix the issue. Ask for help if needed.
-8. Once all checks have passed and you are ready to submit a Pull Request, update the changelog with a brief description of what your work added, changed, or fixed. There is an Unreleased section at top with subheadings for each category. Edit the file CHANGELOG.md found at project root.
-9. Add the changed files `git add .` and commit `git commit -m '[your commit message here]'` you commit message should reference the issue number and include a very brief description of the work.
-10. **Pull from `dev`**
-    - Run `git pull origin dev`. This is a critical step. It ensures your Pull Request is synced with the latest work in the main `dev` branch. If you are lucky, it will auto-merge. Otherwise, you may have to resolve conflicts between your commit and what currently exists in dev. Please be careful with this step so no code is lost - ask for help if you are unsure what to do.
-    - If manually merging, you will have changed files so you will need to add and commit once more (see step 9).
-11. Push your committed and synced branch to the remote repo (Github): `git push origin [your branch name]`
-12. Submit Pull Request (PR) to merge your issue branch into `dev`
-    - Automated checks will be run against your PR. Failure of any of these will mean you need to re-commit to your branch to update your PR with the fix. A colleague will review your work and either approve it or request changes. Upon approval of the PR your issue will be automatically moved to the 'In Dev Branch' column of the project board.
-
-Move onto next assigned issue and start back at step 1.
+An issue will be assigned to you via GitHub. Your workflow begins after assignment:
+1. Create a branch based on the `dev` branch with your initials and the issue number as the branch name (e.g. JD-5): `git checkout -b JD-5`
+3. Work on the issue.
+     1. In the "Projects" section on the sidebar of the issue page, under "StreamStats Ecoystem", change the "Status" to "In Progress".
+     2. While you work, you may wish to have the app running live with live reload: `uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+     3. Add your changes: `git add .`
+     4. Check that your files were added as expected: `git status`
+     5. Frequently commit your work to your local branch. Use simple, short, and descriptive messages with a verb describing the work. Include the issue number. Example: `git commit -m "#5 add weightEst4 endpoint"`
+4. Update the [CHANGELOG.md](https://github.com/USGS-WiM/nldi_polygon_query/blob/master/CHANGELOG.md) to describe your work.
+5. Ensure your code is synced with the latest version of the `dev` branch: 
+     1. Use this command: `git pull origin dev`
+     2. If there are no merge conflicts, the updates made to the `dev` branch will be incorporated into your local branch automatically.
+     3. If there are merge conflicts, you will need to resolve conflicts manually. Please be careful with this step so that no code is lost. Once complete, you will need to add your changes: `git add .` and then commit again: `git commit -m "add message here"`
+6. Push your committed and synced branch to the remote repository on GitHub: `git push origin JD-5`
+7. Submit a [Pull Request](https://github.com/USGS-WiM/nldi_polygon_query/pulls):
+     1. Request that your branch be merged into the `dev` branch.
+     2. Name the Pull Request in this format: "Fixes #5 - Issue Description". 
+     3. Use [keywords](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests) to automatically close issues (e.g. "Closes #5).
+     4. Assign a reviewer (typically the lead developer).
+8. Once your Pull Request is reviewed, address any feedback that needs to be addressed. Once you have addressed feedback, click the button to re-request review.
+9. Upon approval of the Pull Request, your issue will be merged into the `dev` branch and you can start on a new issue.
 
 ## Deployment
 
-Add additional notes about how to deploy this on a live system. **Do not include any credentials, IP addresses, or other sensitive information**
+1. [Contact SysOps](https://github.com/USGS-WiM/wim-infrastructure/issues/new) to request access to the FastAPI_Services server
+2. Use [Putty](https://www.putty.org/) to SSH onto the FastAPI_Services server. In the Putty Configuration:
+     - Host Name: `<you_username>@FastAPI_Services_hostname_or_IP_address`
+     - Port: 22
+     - Connection type: SSH
+     - In the sidebar, Connection > SSH > Auth: "Private key file for authentication:" click "Browse" to upload your private key file
+     - Click "Open" to connect
+ 3. Go to the app directory: `cd /var/www/nldi_polygon_query/`
+ 4. Pull the latest code: `sudo git pull origin master`
+ 5. Restart the daemon: `sudo systemctl restart nldi_polygon_query`
+ 6. Check that the services were updated: https://nldi_polygon_query.streamstats.usgs.gov/docs
+ 7. Exit when finished: `exit`
 
 ## Built With
 
-* [Angular](https://angular.io/) - The main web framework used
-* [Clarity UI](https://vmware.github.io/clarity/) - Top-level UI framework if you have one
-* [NPM](https://www.npmjs.com/) - Dependency Management
-* [Others](https://www.npmjs.com/) - Any other high-level dependencies
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on the process for submitting pull requests to us. Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details on adhering by the [USGS Code of Scientific Conduct](https://www2.usgs.gov/fsp/fsp_code_of_scientific_conduct.asp).
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](../../tags).
-
-Advance the version when adding features, fixing bugs or making minor enhancement. Follow semver principles. To add tag in git, type git tag v{major}.{minor}.{patch}. Example: git tag v2.0.5
-
-To push tags to remote origin: `git push origin --tags`
-
-When a new release (or version) occurs, change the Unreleased section of the [CHANGELOG.md](CHANGELOG.md) into a new release version section and start a clean Unreleased section.
-
-*Note that your alias for the remote origin may differ.
+* [Python](https://www.python.org/) - The main programming language used
+* [FastAPI](https://fastapi.tiangolo.com/) - Web framework for building APIs
 
 ## Authors
 
-* **[Jordan Doe](PROFILE_PAGE_URL_HERE)**  - *Lead Developer* - [USGS Web Informatics & Mapping](https://wim.usgs.gov/)
-* **[Jessie Smith](PROFILE_PAGE_URL_HERE)** - *Developer* -  [USGS Web Informatics & Mapping](https://wim.usgs.gov/)
-
-See also the list of [contributors](../../graphs/contributors) who participated in this project.
+* **[Anders Hopkins](https://github.com/Anders-Hopkins)**  - *Lead Developer* - [USGS Web Informatics & Mapping](https://wim.usgs.gov/)
 
 ## License
 
@@ -114,21 +128,6 @@ This project is licensed under the Creative Commons CC0 1.0 Universal License - 
 In the spirit of open source, please cite any re-use of the source code stored in this repository. Below is the suggested citation:
 
 `This project contains code produced by the Web Informatics and Mapping (WIM) team at the United States Geological Survey (USGS). As a work of the United States Government, this project is in the public domain within the United States. https://wim.usgs.gov`
-
-## Scientific Citations
-This project implements methodology or uses data from the following reports and data releases. See the [Scientific_Documentation.md](Scientific_Documentation.md) file for details.
-
-<!-- Delete section if not applicable -->
-<!-- If there are too many citations to reasonably list, provide some information about the data or where citations can be found -->
-
-`Doe, J.E., Smith, A.B., and Doe, J.M., 2022, Title of the report: U.S. Geological Survey Scientific Investigations Report XXXX–XXXX, XX p., https://doi.org/XX.XXXX/sirXXXXXXXX.`
-
-`Doe, J.E., Smith, A.B., and Doe, J.M., 2022, Data release for described data: U.S. Geological Survey data release, https://doi.org/XX.XXXX/XXXXXXXX.`
-
-## Acknowledgments
-
-* Hat tip to anyone who's code was used
-* Inspiration Note
 
 ## About WIM
 * This project authored by the [USGS WIM team](https://wim.usgs.gov)

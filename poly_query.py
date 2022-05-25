@@ -5,6 +5,10 @@ from shapely.geometry import MultiPolygon
 
 
 class Poly_Query:
+    '''Class that will take a geojson feature class and query the NLDI for overlapping
+    catchments and flowlines. Catchments will always be queried. Flowlines are optional. 
+    Downstream flowlines can also be returned.
+    '''
 
     def __init__(self, data=str, get_flowlines=bool, downstream_dist=float):
         self.data = data
