@@ -16,7 +16,7 @@ To run the services locally, run the following in your Windows command prompt:
 ```bash
 # clone repository
 git clone https://github.com/USGS-WiM/nldi_polygon_query.git
-cd SS-WeightingServces
+cd nldi_polygon_query
 # create a virtual environment
 python -m venv env
 # active the virtual environment
@@ -24,7 +24,7 @@ python -m venv env
 # install the project's dependencies
 pip install -r requirements.txt
 # deploy at a local server
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 Alternate instructions for the Windows [Anaconda3](https://docs.anaconda.com/anaconda/install/index.html) prompt:
@@ -32,7 +32,7 @@ Alternate instructions for the Windows [Anaconda3](https://docs.anaconda.com/ana
 ```bash
 # clone repository
 git clone https://github.com/USGS-WiM/nldi_polygon_query.git
-cd SS-WeightingServces
+cd nldi_polygon_query
 # create a new Conda environment
 conda create --name nldi_polygon_query
 # active the Conda environment
@@ -41,10 +41,10 @@ conda activate nldi_polygon_query
 conda install pip
 pip install -r requirements.txt
 # deploy at a local server
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-Add --reload to the end of the uvicorn main:app --host 0.0.0.0 --port 8000 to enable hot reload for local testing purposes only.
+Add --reload to the end of the uvicorn main:app --host 127.0.0.1 --port 8000 to enable hot reload for local testing purposes only.
 
 Once the above code has been run successfully, the service documentation will be available at http://127.0.0.1:8000/docs/.
 ### Getting Started
@@ -78,7 +78,7 @@ An issue will be assigned to you via GitHub. Your workflow begins after assignme
 1. Create a branch based on the `dev` branch with your initials and the issue number as the branch name (e.g. JD-5): `git checkout -b JD-5`
 3. Work on the issue.
      1. In the "Projects" section on the sidebar of the issue page, under "StreamStats Ecoystem", change the "Status" to "In Progress".
-     2. While you work, you may wish to have the app running live with live reload: `uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+     2. While you work, you may wish to have the app running live with live reload: `uvicorn main:app --host 127.0.0.1 --port 8000 --reload`
      3. Add your changes: `git add .`
      4. Check that your files were added as expected: `git status`
      5. Frequently commit your work to your local branch. Use simple, short, and descriptive messages with a verb describing the work. Include the issue number. Example: `git commit -m "#5 add weightEst4 endpoint"`
