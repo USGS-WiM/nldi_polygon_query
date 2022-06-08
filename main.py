@@ -1,13 +1,18 @@
-from fastapi import FastAPI, HTTPException, UploadFile, Form
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from poly_query import Poly_Query
 
-from fastapi import FastAPI
 
 app = FastAPI(
     title='Polygon Querying of NLDI for catchments and flowlines',
     docs_url='/docs'
 )
+
+class Item(BaseModel):
+    data: dict
+    get_flowlines: bool
+    downstream_dist: float
 
 
 # Redirect root and /settings.SERVICE_NAME to the docs
@@ -16,27 +21,20 @@ def docs_redirect_root():
     return RedirectResponse(url=app.docs_url)
 
 
-# Use post operation to upload geojson file with polygons to query.
+# Use post operation to process geojson object with polygons to query.
 # Includes two additional params to use in the query.
 @app.post("/nldi_poly_query/")
-async def query_poly(file: UploadFile,
-                     get_flowlines: str = Form(...),
-                     downstream_dist: str = Form(...)
-    ):
+async def query_poly(request: Item):
 
-    # Convert params from strings to bool and float
-    if get_flowlines == 'True' or get_flowlines == 'TRUE':
-        get_flowlines = True
-    elif get_flowlines == 'False' or get_flowlines == 'FALSE':
-        get_flowlines = False
-    downstream_dist = float(downstream_dist)
+
+    content = request.data
+    get_flowlines = request.get_flowlines
+    downstream_dist = request.downstream_dist
+    
 
     try:
-        contents = await file.read()
-        results = Poly_Query(contents, get_flowlines, downstream_dist)
+        results = Poly_Query(content, get_flowlines, downstream_dist)
         results = results.serialize()
-
-        await file.close()
     
         return results
 
