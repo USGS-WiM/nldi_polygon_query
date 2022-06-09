@@ -40,8 +40,8 @@ class Poly_Query:
 
     def run(self):
 
-        data = geojson.loads(self.data)
-        coords: list = parse_input(data)
+        # data = geojson.loads(self.data)
+        coords: list = parse_input(self.data)
 
         #################### Get the catchments that are overlapped by the polygon ########################       
         # If there is only one polygon to query
