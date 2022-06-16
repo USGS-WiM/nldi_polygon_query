@@ -22,6 +22,9 @@ class Poly_Query:
         self.flowlines = None
         self.downstreamflowlines = None
 
+        if self.downstream_dist == 0:
+            self.get_flowlines = False
+
         self.run()
 
     def serialize(self):   
