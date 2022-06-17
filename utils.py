@@ -23,41 +23,52 @@ def parse_input(data: json) -> list:
     # Extract the individual polygons from the input geojson file
     coords: list = []   # This will be a list of polygons
     for d in data['features']:
-        if d['geometry']['type'] == 'Polygon':              # If it is a polygon
-            if len(d['geometry']['coordinates']) == 1:      # Confirm that it is a polygon
-                rounded_coords = list(np.round_(np.array(d['geometry']['coordinates']),decimals=4))
-                coords.append(rounded_coords) # And add it to the list of polygons
-            if len(d['geometry']['coordinates']) > 1:       # If the polygon is actually a multipolygon
-                for c in d['geometry']['coordinates']:      # Loop thru it
-                    rounded_coords = np.round_(np.array(c),decimals=4)
-                    coords.append([rounded_coords])           # And add each polygon (as a list) tp the list
-        if d['geometry']['type'] == 'MultiPolygon':         # If it is a multipolygon
-            for e in d['geometry']['coordinates']:          # Loop thru it 
+        # If it is a polygon
+        if d['geometry']['type'] == 'Polygon':
+            # Confirm that it is a polygon
+            if len(d['geometry']['coordinates']) == 1:
+                rounded_coords = list(
+                    np.round_(np.array(d['geometry']['coordinates']), decimals=4)
+                )
+                # And add it to the list of polygons
+                coords.append(rounded_coords)
+            # If the polygon is actually a multipolygon
+            if len(d['geometry']['coordinates']) > 1:
+                # Loop thru it
+                for c in d['geometry']['coordinates']:
+                    rounded_coords = np.round_(np.array(c), decimals=4)
+                    # And add each polygon (as a list) tp the list
+                    coords.append([rounded_coords])
+        # If it is a multipolygon
+        if d['geometry']['type'] == 'MultiPolygon':
+            # Loop thru it
+            for e in d['geometry']['coordinates']:
                 rounded_coords = list(np.round_(np.array(e),decimals=4))
-                coords.append(rounded_coords)               # And add it to the list of polygons
+                # And add it to the list of polygons
+                coords.append(rounded_coords)
 
     return coords
 
 
 def get_local_catchments(coords: list) -> tuple:
-    """Perform polygon intersect query to NLDI geoserver to get local catchments"""
-    
-    ## If there are more than 237 points, the catchment query will not work
+    """
+    Perform polygon intersect query to NLDI geoserver to get local catchments
+    """
+
+    # If there are more than 237 points, the catchment query will not work
     # Convert coords to shapely geom
     if len(coords) > 237:
         poly: shapely.Polygon = Polygon(coords)
         i = 0.000001
+        # Loop thru the polygon and simplify until coords < 235
         while len(poly.exterior.coords) > 235:
             poly = poly.simplify(i, preserve_topology=True)
             i += 0.000001
-        # while len(coords) > 235:
-        #     coords.pop(random.randrange(len(coords)))
-        # poly = Polygon(coords)
 
     else:
         poly: shapely.Polygon = Polygon(coords)
-    
-    cql_filter = f"INTERSECTS(the_geom, {poly.wkt})"   
+
+    cql_filter = f"INTERSECTS(the_geom, {poly.wkt})"
 
     payload = {
         'service': 'wfs',
@@ -69,19 +80,23 @@ def get_local_catchments(coords: list) -> tuple:
         'CQL_FILTER': cql_filter
     }
 
-    # Try to request catchment geometry from polygon query from NLDI geoserver
+    # Request catchment geometry from polygon query from NLDI geoserver
+    r = requests.get(NLDI_GEOSERVER_URL, params=payload)
+
     try:
-        r = requests.get(NLDI_GEOSERVER_URL, params=payload)
-        # Convert response to json
+        # Try to  convert response to json
         resp = r.json()
-        
+
     # If request fails or can't be converted to json, something's up
-    except:
+    except Exception:
         if r.status_code == 200:
-            print('Get local catchments request failed. Check to make sure query was submitted with lon, lat coords. Quiting nldi_flowtools query.')
+            print('Get local catchments request failed. Check to make sure \
+            query was submitted with lon, lat coords. Quiting nldi_flowtools \
+            query.')
 
         else:
-            print('Quiting nldi_flowtools query. Error requesting catchment from Geoserver:', r.exceptions.HTTPError)
+            print('Quiting nldi_flowtools query. Error requesting catchment \
+                from Geoserver:', r.exceptions.HTTPError)
 
         # Kill program if request fails.
         sys.exit(1)
@@ -91,44 +106,55 @@ def get_local_catchments(coords: list) -> tuple:
     x = 0
     catchmentIdentifiers: list = []
     catchmentGeoms: list = []
-    while x < len(features):    # Loop thru each catchment returned        
-        catchmentIdentifiers.append(json.dumps(features[x]['properties']['featureid']))     # Add catchment IDs to list
-        if len(features[x]["geometry"]['coordinates']) > 1:    # If the catchment is multipoly (I know this is SUPER annoying)
+    # Loop thru each catchment returned
+    while x < len(features):
+        # Add catchment IDs to list
+        catchmentIdentifiers.append(
+            int(features[x]['properties']['featureid'])
+        )
+        # If the catchment is multipoly (I know this is SUPER annoying)
+        if len(features[x]["geometry"]['coordinates']) > 1:
             r = 0
             while r < len(features[x]["geometry"]['coordinates']):
-                catchmentGeoms.append(Polygon(features[x]["geometry"]['coordinates'][r][0]))
+                catchmentGeoms.append(
+                    Polygon(features[x]["geometry"]['coordinates'][r][0])
+                )
                 r += 1
-        else:       # Else, the catchment is a single polygon (as it should be)
-            catchmentGeoms.append(Polygon(features[x]["geometry"]['coordinates'][0][0]))
+        else:  # Else, the catchment is a single polygon (as it should be)
+            catchmentGeoms.append(
+                Polygon(features[x]["geometry"]['coordinates'][0][0])
+            )
         x += 1
-    
+
     catchmentGeoms: shapely.MultiPolygon = MultiPolygon(catchmentGeoms)
 
     # Remove duplicates from list of catchment IDs
-    catchmentIdentifiers: list = [x for x in catchmentIdentifiers if catchmentIdentifiers.count(x) == 1]
+    catchmentIdentifiers: list = [
+        x for x in catchmentIdentifiers if catchmentIdentifiers.count(x) == 1
+    ]
 
-    
     return catchmentIdentifiers, catchmentGeoms
 
 
 def get_local_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
-    """Request NDH Flowlines from NLDI with Catchment ID"""
+    """Request NHD Flowlines from NLDI with Catchment ID"""
 
     nhdGeom: list = []
     fromnode_list: list = []
     tonode_dict: dict = {}
+    flowlineIDs: list = []
 
     # Request catchments 100 or less at a time
     for i in range(0, len(catchmentIdentifiers), 100):
         chunk = catchmentIdentifiers[i:i + 100]
-                
+
         catchmentids = tuple(chunk)
 
-        cql_filter = f"comid IN {catchmentids}" 
+        cql_filter = f"comid IN {catchmentids}"
         # If there is only one feature
         if len(catchmentIdentifiers) == 1:
             cql_filter = f"comid IN ({catchmentIdentifiers})"
-        
+
         payload = {
             'service': 'wfs',
             'version': '1.0.0',
@@ -139,63 +165,72 @@ def get_local_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
             'srsName': 'EPSG:4326',
             'CQL_FILTER': cql_filter
         }
-        # Try to request flowlines geometry from catchment ID from NLDI geoserver
+        # Request flowlines geometry from catchment ID from NLDI geoserver
+        r = requests.get(NLDI_GEOSERVER_URL, params=payload)
+
         try:
-            r = requests.get(NLDI_GEOSERVER_URL, params=payload)
-            # Convert response to json
+            # Try to convert response to json
             flowlines: dict = r.json()
 
         # If request fails or can't be converted to json, something's up
-        except:
+        except Exception:
             if r.status_code == 200:
-                print('Get local flowlines request failed with status code 200. Quiting nldi_flowtools query.')
+                print('Get local flowlines request failed with status code \
+                    200. Quiting nldi_flowtools query.')
 
             else:
-                print('Quiting nldi_flowtools query. Error requesting flowlines from Geoserver:', r.exceptions.HTTPError)
+                print('Quiting nldi_flowtools query. Error requesting \
+                    flowlines from Geoserver:', r.exceptions.HTTPError)
 
             # Kill program if request fails.
             sys.exit(1)
-
 
         for feature in flowlines['features']:
             # Get from and to nodes
             fromnode_list.append(feature['properties']['fromnode'])
             tonode_dict[feature['properties']['comid']] = feature['properties']['tonode']
+            # Get comids
+            flowlineIDs.append(feature['properties']['comid'])
             # Convert the flowline to a geometry collection to be exported
             for coords in feature['geometry']['coordinates']:
                 nhdGeom.append([coord[0:2] for coord in coords])
 
     outlets: tuple = find_out_flowline(tonode_dict, fromnode_list)
 
-    if not dist:
+    if dist == 0:
         flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
 
-    if dist:
+    if dist > 0:
         payload = {'f': 'json', 'distance': dist}
 
-        flowlines: dict = {'type': 'FeatureCollection', 'features': []}
         for id in outlets:
             # request downstream flowlines geometry NLDI
+            r = requests.get(
+                NLDI_URL + str(id) + '/navigation/DM/flowlines', params=payload
+            )
+
             try:
-                r = requests.get(NLDI_URL  + str(id) + '/navigation/DM/flowlines', params=payload)
                 downstreamflowlines: dict = r.json()
                 for feature in downstreamflowlines['features']:
+                    # Get comids
+                    flowlineIDs.append(int(feature['properties']['nhdplus_comid']))
+                    # Get geometries
                     nhdGeom.append(feature['geometry']['coordinates'])
-            except:
+            except Exception:
                 if r.status_code == 200:
-                    print('Get downstream flowlines request failed with status code 200. Quiting nldi_flowtools query.')
+                    print('Get downstream flowlines request failed with status \
+                        code 200. Quiting nldi_flowtools query.')
 
                 else:
-                    print('Quiting nldi_flowtools query. Error requesting flowlines from Geoserver:', r.exceptions.HTTPError)
+                    print('Quiting nldi_flowtools query. Error requesting \
+                        flowlines from Geoserver:', r.exceptions.HTTPError)
 
                 # Kill program if request fails.
                 sys.exit(1)
 
-
         flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
 
-    return flowlines, downstreamflowlines, flowlinesGeom
-    
+    return flowlinesGeom, flowlineIDs
 
 
 def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
@@ -204,7 +239,6 @@ def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
     for key in tonode_dict:
         if not int(tonode_dict[key]) in fromnode_list:
             outlets.append(int(key))
-    
+
     outlet_flowlines: tuple = tuple(outlets)
     return outlet_flowlines
-        
