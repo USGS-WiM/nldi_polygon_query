@@ -1,5 +1,5 @@
-from .utils import geom_to_geojson, parse_input
-from .utils import get_local_catchments, get_local_flowlines
+from utils import geom_to_geojson, parse_input
+from utils import get_local_catchments, get_local_flowlines
 from geojson import Feature, FeatureCollection
 from shapely.geometry import MultiPolygon
 
