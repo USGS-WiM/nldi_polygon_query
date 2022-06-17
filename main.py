@@ -2,11 +2,20 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from poly_query import Poly_Query
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(
     title='Polygon Querying of NLDI for catchments and flowlines',
     docs_url='/docs'
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
 
