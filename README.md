@@ -5,6 +5,8 @@
 
 This is a python package for querying the Network Linked Data Index for hydrographic data. The input data to this package is a GeoJSON FeatureCollection, and so is the output. The package will parse the input FeatureCollection, separate multipolygons and make Get requests to the NLDI for catchments and flowlines (depending on the input parameters) that overlap with the query polygons. Also, a trace downstream distance can be set in order to return flowlines a set distance downstream for the query polygons.
 
+Services for the `main` branch can be found at https://streamstats.usgs.gov/nldipolygonservices and documentation can be found at https://streamstats.usgs.gov/nldipolygonservices/docs.
+
 ### Prerequisites
 
 Python 3
@@ -108,7 +110,7 @@ An issue will be assigned to you via GitHub. Your workflow begins after assignme
  3. Go to the app directory: `cd /var/www/nldi_polygon_query/`
  4. Pull the latest code: `sudo git pull origin master`
  5. Restart the daemon: `sudo systemctl restart nldi_polygon_query`
- 6. Check that the services were updated: https://nldi_polygon_query.streamstats.usgs.gov/docs
+ 6. Check that the services were updated: https://streamstats.usgs.gov/nldipolygonservices/docs
  7. Exit when finished: `exit`
 
 ## Built With
