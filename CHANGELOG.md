@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/USGS-WiM/nldi_polygon_query/)
+## [Unreleased](https://github.com/USGS-WiM/nldi_polygon_query/tree/dev)
 
 ### Added 
 
@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Updated README and requirements
 - Changed small things in main.py and utils.py to make FastAPI work
+- Updated service URL in README
 
 ### Removed 
 
