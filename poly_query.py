@@ -80,7 +80,7 @@ class Poly_Query:
                 x += 1
             self.catchmentGeom = MultiPolygon(polygons)
 
-        # Get flowlines 
+        # Get flowlines
         if self.get_flowlines:
             self.flowlinesGeom, self.flowlineIDs = get_local_flowlines(
                 self.catchmentIDs, self.downstream_dist
