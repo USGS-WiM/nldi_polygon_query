@@ -8,6 +8,7 @@ import numpy as np
 # arguments
 NLDI_URL = 'https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/'
 NLDI_GEOSERVER_URL = 'https://labs.waterdata.usgs.gov/geoserver/wmadata/ows'
+SS_NAV_SERVICE_URL = 'https://streamstats.usgs.gov/navigationservices/navigation/networktrace/route'
 
 
 # functions
@@ -50,9 +51,16 @@ def parse_input(data: json) -> list:
     return coords
 
 
-def get_local_catchments(coords: list) -> tuple:
+def get_catchments(coords: list) -> tuple:
     """
     Perform polygon intersect query to NLDI geoserver to get local catchments
+
+    Input:
+    coords: List of x, y coords 
+
+    Returns:
+    catchmentIdentifiers: list of catchment COMIDs
+    catchmentGeoms: List of Shapely Polygons
     """
 
     # If there are more than 237 points, the catchment query will not work
@@ -129,22 +137,37 @@ def get_local_catchments(coords: list) -> tuple:
     catchmentGeoms: shapely.MultiPolygon = MultiPolygon(catchmentGeoms)
 
     # Remove duplicates from list of catchment IDs
-    catchmentIdentifiers: list = [
-        x for x in catchmentIdentifiers if catchmentIdentifiers.count(x) == 1
-    ]
+    temp_list: list = []
+    [temp_list.append(x) for x in catchmentIdentifiers if x not in temp_list]
+    # reassign and delete temp list
+    catchmentIdentifiers = temp_list
+    del temp_list
 
     return catchmentIdentifiers, catchmentGeoms
 
 
-def get_local_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
-    """Request NHD Flowlines from NLDI with Catchment ID"""
+def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
+    """Request NHD Flowlines from NLDI with Catchment ID.
+
+    Get all the NHD Flowlines from the input list of COMIDs,
+    and retrieve all the flowlines downstream to the specified distance.
+
+    Inputs:
+    catchmentIdentifiers: list of integers COMIDs
+    dist: float
+
+    Returns:
+    flowlinesGeom: Shapely Multipolygon geometry
+    flowlineIDs: List of integer COMIDs
+    outlet_headnodes: List of coordinate pairs
+    """
 
     nhdGeom: list = []
     fromnode_list: list = []
     tonode_dict: dict = {}
     flowlineIDs: list = []
 
-    # Request catchments 100 or less at a time
+    # Request flowlines 100 or less at a time
     for i in range(0, len(catchmentIdentifiers), 100):
         chunk = catchmentIdentifiers[i:i + 100]
 
@@ -196,6 +219,11 @@ def get_local_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
                 nhdGeom.append([coord[0:2] for coord in coords])
 
     outlets: tuple = find_out_flowline(tonode_dict, fromnode_list)
+    # Get headnodes of outlet flowlines
+    outlet_headnodes = []
+    for out in outlets:
+        index = flowlineIDs.index(out)
+        outlet_headnodes.append(nhdGeom[index][0])
 
     if dist == 0:
         flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
@@ -230,7 +258,81 @@ def get_local_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
 
         flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
 
-    return flowlinesGeom, flowlineIDs
+    return flowlinesGeom, flowlineIDs, outlet_headnodes
+
+def get_gages(coords: list, outlet_headnodes: list, dist: float):
+    '''Query the input polygon and donwstream flowlines for stream gages.
+    The polygon query for gages requests gages from NLDI.
+    The flowline query pulls gages from the StreamStats Navigation Services.
+
+    Input:
+
+    Returns:
+
+    '''
+
+    # Rough list of gages
+    ss_gages = [] 
+    
+    # Loop thru the outlet_headnodes and request gages downstream at dist
+    for coords in outlet_headnodes:
+        payload = [
+            {
+                "id": 1,
+                "name": "Start point location",
+                "required": True,
+                "description": "Specified lat/long/crs  navigation start location",
+                "valueType": "geojson point geometry",
+                "value": {
+                    "type": "Point",
+                    "coordinates": coords,
+                    "crs": {
+                        "properties": {"name": "EPSG:4326"},
+                        "type": "name"
+                    }
+                }
+            },
+            {
+                "id": 0,
+                "name": "Limit",
+                "required": False,
+                "description": "Limits network operations to within specified option",
+                "valueType": "exclusiveOption",
+                "value": {
+                    "id": 3,
+                    "name": "Distance (km)",
+                    "description": "Limiting distance in kilometers from starting point",
+                    "valueType": "numeric",
+                    "value": dist
+                }
+            },
+            {
+                "id": 5,
+                "name": "Direction",
+                "required": True,
+                "description": "Network operation direction",
+                "valueType": "exclusiveOption",
+                "value": "downstream"
+            },
+            {
+                "id": 6,
+                "name": "Query Source",
+                "required": True,
+                "description": "Specified data source to query",
+                "valueType": "option",
+                "value": ["nwisgage"]
+            }
+        ]
+        # send request
+        r = requests.request("POST", SS_NAV_SERVICE_URL, json=payload)
+        # COnvert response to json
+        results = r.json()
+        # Exclude first point since its the query point
+        a = results['features'][1:]
+        ss_gages = ss_gages + a
+        del a
+
+    # Query the burn area polygon for gages and add to ss_gage list
 
 
 def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
@@ -241,4 +343,5 @@ def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
             outlets.append(int(key))
 
     outlet_flowlines: tuple = tuple(outlets)
+    print('outlet_flowlines:', outlet_flowlines)
     return outlet_flowlines
