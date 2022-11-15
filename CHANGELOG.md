@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/USGS-WiM/nldi_polygon_query/tree/dev)
 
+## [0.2.0] - 2022-11-15
+### Added 
+- Add functionality to query gages inside the area of interest and on downstream flowlines
+
+### Changed  
+- The output object is now a list of GeoJson FeatureCollections: catchments, flowlines and gages
+
+### Removed 
+- Removed unneeded functions from utils.py and unneeded package imports from utils.py and poly_query.py
+
+
 ## [0.1.1] - 2022-06-17
 ### Added 
 - Enforced PEP8 standards
