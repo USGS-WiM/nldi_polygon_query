@@ -3,7 +3,7 @@
     "name": "nldi_polygon_query",
     "organization": "U.S. Geological Survey",
     "description": "A python package for querying the Network Linked Data Index with polygons for hydrography data.",
-    "version": "v0.1.1",
+    "version": "v0.2.0",
     "status": ["Development"],
 
     "permissions": {
@@ -39,7 +39,7 @@
     },
 
     "date": {
-      "metadataLastUpdated": "2022-5-24"
+      "metadataLastUpdated": "2022-11-15"
     }
   }
 ]

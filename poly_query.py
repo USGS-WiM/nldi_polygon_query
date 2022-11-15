@@ -1,91 +1,55 @@
-from utils import geom_to_geojson, parse_input
-from utils import get_local_catchments, get_local_flowlines
-from geojson import Feature, FeatureCollection
-from shapely.geometry import MultiPolygon
+from utils import get_catchments, get_flowlines, get_gages
 
 
 class Poly_Query:
     '''Class that will take a geojson feature collection and query the NLDI for
      overlapping catchments and flowlines. Catchments will always be queried.
-     Flowlines are optional. Downstream flowlines can also be returned.
+     Downstream flowlines and Gages queries are optional.
     '''
 
-    def __init__(self, data=str, get_flowlines=bool, downstream_dist=float):
+    def __init__(self, data=str, return_flowlines=bool, return_gages=bool, downstream_dist=float):
         self.data = data
-        self.get_flowlines = get_flowlines
+        self.return_flowlines = return_flowlines
+        self.return_gages = return_gages
         self.downstream_dist = downstream_dist
         self.catchmentIDs = None
-        self.catchmentGeom = None
-        self.totalBasinGeoms = []
-        self.upcatchmentGeom = None
-        self.flowlinesGeom = None
+        self.catchments = None
+        self.flowlines = None
         self.flowlineIDs = None
+        self.outlet_headnodes = None
+        self.gages = None
 
         self.run()
 
-    def serialize(self):
-        catchments: dict = geom_to_geojson(self.catchmentGeom)
-        feature1 = Feature(
-            geometry=catchments,
-            id='catchment',
-            properties={'catchmentIDs': self.catchmentIDs}
-        )
-
-        if self.get_flowlines is True:
-            flowlines = geom_to_geojson(self.flowlinesGeom)
-            feature3 = Feature(
-                geometry=flowlines,
-                id='flowlinesGeom',
-                properties={'flowlineIDs': self.flowlineIDs})
-            featurecollection = FeatureCollection([feature1, feature3])
-
-        if self.get_flowlines is False:
-            featurecollection = FeatureCollection([feature1])
-
-        return featurecollection
-
     def run(self):
-
-        # data = geojson.loads(self.data)
-        coords: list = parse_input(self.data)
+        '''Run the Polygon Query.'''
 
         # Get the catchments that are overlapped by the polygon
-        # If there is only one polygon to query
-        if len(coords) == 1:
-            self.catchmentIDs, self.catchmentGeom = get_local_catchments(coords[0][0])
+        self.catchments, self.catchmentIDs = get_catchments(self.data)
 
-        # If there is more than one polygon to query
-        if len(coords) > 1:
-            self.catchmentIDs = []
-            self.catchmentGeom = []
-            for x in coords:
-                if type(x[0][0][0]) is list:
-                    for y in x:
-                        result = get_local_catchments(y[0])
-                        self.catchmentIDs.extend(result[0])
-                        self.catchmentGeom.extend(result[1].geoms)
-                        del result
-                else:
-                    result = get_local_catchments(x[0])
-                    self.catchmentIDs.extend(result[0])
-                    self.catchmentGeom.extend(result[1].geoms)
-                    del result
-
-            x = 0
-
-            # Create a multipolygon geometry of all the catchments
-            polygons: list = []
-            while x < len(self.catchmentGeom):
-                polygons.append(self.catchmentGeom[x])
-                x += 1
-            self.catchmentGeom = MultiPolygon(polygons)
-
-        # Get flowlines 
-        if self.get_flowlines:
-            self.flowlinesGeom, self.flowlineIDs = get_local_flowlines(
+        # Get flowlines
+        if self.return_flowlines or self.return_gages:
+            self.flowlines, self.flowlineIDs, self.outlet_headnodes = get_flowlines(
                 self.catchmentIDs, self.downstream_dist
             )
 
-        # Get no flowlines
-        if not self.get_flowlines:
-            pass
+        # If True, get gages
+        if self.return_gages:
+            self.gages = get_gages(self.data, self.outlet_headnodes, self.downstream_dist)
+
+    def serialize(self):
+        '''Process the results and return a list of Json FeatureCollections.'''
+
+        output_object = []
+
+        output_object.append(self.catchments)
+
+        if self.return_flowlines is True:
+            output_object.append(self.flowlines)
+
+        if self.return_gages is True:
+            # Put gages in a faturecollection object
+            fc = {'type': 'FeatureCollection', 'features': self.gages}
+            output_object.append(fc)
+
+        return output_object
