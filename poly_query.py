@@ -1,4 +1,4 @@
-from .utils import get_catchments, get_flowlines, get_gages
+from utils import get_catchments, get_flowlines, get_gages
 
 
 class Poly_Query:
@@ -28,7 +28,7 @@ class Poly_Query:
         self.catchments, self.catchmentIDs = get_catchments(self.data)
 
         # Get flowlines
-        if self.return_flowlines:
+        if self.return_flowlines or self.return_gages:
             self.flowlines, self.flowlineIDs, self.outlet_headnodes = get_flowlines(
                 self.catchmentIDs, self.downstream_dist
             )
@@ -48,6 +48,8 @@ class Poly_Query:
             output_object.append(self.flowlines)
 
         if self.return_gages is True:
-            output_object.append(self.gages)
+            # Put gages in a faturecollection object
+            fc = {'type': 'FeatureCollection', 'features': self.gages}
+            output_object.append(fc)
 
         return output_object

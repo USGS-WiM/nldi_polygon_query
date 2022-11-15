@@ -1,6 +1,8 @@
 import requests
-from shapely.geometry import Point, Polygon, shape
+from shapely.geometry import Point, Polygon, shape, MultiPolygon
 import sys
+# import warnings
+# warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 # API urls
@@ -51,9 +53,17 @@ def get_catchments(data: dict) -> tuple:
     """
 
     # Pull the coordinates from the fire polygon geojson object
-    coords = data['features'][0]['geometry']
+    coords = []
+    for d in data['features']:
+        s = shape(d['geometry'])
+        if type(s) is Polygon:
+            coords.append(s)
+
+        elif type(s) is MultiPolygon:
+            for g in s.geoms:
+                coords.append(g)
     # Convert to a shapely polygon
-    fire_poly = shape(coords)
+    fire_poly = MultiPolygon(coords)
 
     # Get the bbox
     xmin, ymin, xmax, ymax = fire_poly.bounds
@@ -98,8 +108,10 @@ def get_catchments(data: dict) -> tuple:
     # which overlap with the fire polygon
     catchments_list = []
     for g in all_catchments['features']:
-        if shape(g['geometry']).overlaps(fire_poly):
-            catchments_list.append(g)
+        for h, i in enumerate(fire_poly):
+            if shape(g['geometry']).intersects(i):
+                catchments_list.append(g)
+
 
     # Loop thru the remain catchments and grab the Comids
     catchmentIdentifiers = []
@@ -260,9 +272,17 @@ def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
 
     # Get gages from the fire polygon
     # Pull the coordinates from the fire polygon geojson object
-    coords = data['features'][0]['geometry']
+    coords = []
+    for d in data['features']:
+        s = shape(d['geometry'])
+        if type(s) is Polygon:
+            coords.append(s)
+
+        elif type(s) is MultiPolygon:
+            for g in s.geoms:
+                coords.append(g)
     # Convert to a shapely polygon
-    fire_poly = shape(coords)
+    fire_poly = MultiPolygon(coords)
 
     # Use the bounding box of the fire polygon for the Gage Stats request
     xmin, ymin, xmax, ymax = fire_poly.bounds
@@ -287,8 +307,9 @@ def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
 
     # Loop thru returned gages and make sure they fall within the fire polygon
     for g in fire_bounds_gages['features']:
-        if Point(g['geometry']['coordinates']).within(fire_poly):
-            ss_gages.append(g)
+        for h, i in enumerate(fire_poly):
+            if Point(g['geometry']['coordinates']).within(i):
+                ss_gages.append(g)
 
     # Loop thru the outlet_headnodes and request gages downstream at dist
     for coords in outlet_headnodes:
