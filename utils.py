@@ -1,10 +1,7 @@
-import json
 import requests
-import shapely.geometry
-from shapely.geometry import mapping, MultiLineString, Point
-from shapely.geometry import Polygon, MultiPolygon, shape
+from shapely.geometry import Point, Polygon, shape
 import sys
-import numpy as np
+
 
 # API urls
 NLDI_URL = 'https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/'
@@ -14,69 +11,44 @@ GAGE_STATS_URL = 'https://streamstats.usgs.gov/gagestatsservices/stations/Bounds
 
 
 # functions
-def geom_to_geojson(geom: shapely.geometry) -> dict:
-    """Return a geojson from an OGR geom object"""
+def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
+    '''
+    Finds all the flowlines that are outlets from the poly_query
 
-    geojson_dict: dict = mapping(geom)
+    Inputs:
+        tonode_dict: dict of  Comids and their downstream Comids
+        fromnode_list: list of all the fromnode Comids
 
-    return geojson_dict
+    Returns:
+        outlet_ids: tuple of the Comids of outlet flowlines
 
+    '''
 
-def parse_input(data: json) -> list:
-    # Extract the individual polygons from the input geojson file
-    coords: list = []   # This will be a list of polygons
-    for d in data['features']:
-        # If it is a polygon
-        if d['geometry']['type'] == 'Polygon':
-            # Confirm that it is a polygon
-            if len(d['geometry']['coordinates']) == 1:
-                rounded_coords = list(
-                    np.round_(np.array(d['geometry']['coordinates']), decimals=4)
-                )
-                # And add it to the list of polygons
-                coords.append(rounded_coords)
-            # If the polygon is actually a multipolygon
-            if len(d['geometry']['coordinates']) > 1:
-                # Loop thru it
-                for c in d['geometry']['coordinates']:
-                    rounded_coords = np.round_(np.array(c), decimals=4)
-                    # And add each polygon (as a list) tp the list
-                    coords.append([rounded_coords])
-        # If it is a multipolygon
-        if d['geometry']['type'] == 'MultiPolygon':
-            # Loop thru it
-            for e in d['geometry']['coordinates']:
-                rounded_coords = list(np.round_(np.array(e), decimals=4))
-                # And add it to the list of polygons
-                coords.append(rounded_coords)
+    outlets: list = []
+    for key in tonode_dict:
+        if not int(tonode_dict[key]) in fromnode_list:
+            outlets.append(int(key))
 
-    return coords
+    outlet_ids: tuple = tuple(outlets)
+    return outlet_ids
 
 
 def get_catchments(data: dict) -> tuple:
     """
-    Perform polygon intersect query to NLDI geoserver to get local catchments
+    Perform polygon intersect query to NLDI geoserver to get local catchments.
+
+    The get_catchments function queries the NLDI for all NHD catchments within
+    the bounding box of the fire polygon. Then the function returns any 
+    catchments that overlap with the fire polygon. The cacthment Comids are
+    also returned.
 
     Input:
-    coords: List of x, y coords
+        data: A geojson FeatureCollection of the area of interest
 
     Returns:
-    catchmentIdentifiers: list of catchment COMIDs
-    catchmentGeoms: List of Shapely Polygons
+        catchmentIdentifiers: list of catchment COMIDs
+        catchment: Geojson FeatureCollection of NHD catchments
     """
-
-    # If there are more than 237 points, the catchment query will not work
-    # Convert coords to shapely geom
-    # if len(coords) > 237:
-    #     poly: shapely.Polygon = Polygon(coords)
-    #     i = 0.000001
-    #     # Loop thru the polygon and simplify until coords < 235
-    #     while len(poly.exterior.coords) > 235:
-    #         poly = poly.simplify(i, preserve_topology=True)
-    #         i += 0.000001
-
-    # else:
-    #     poly: shapely.Polygon = Polygon(coords)
 
     # Pull the coordinates from the fire polygon geojson object
     coords = data['features'][0]['geometry']
@@ -144,44 +116,6 @@ def get_catchments(data: dict) -> tuple:
 
     return catchments, catchmentIdentifiers
 
-    # features = resp['features']
-
-    # x = 0
-    # catchmentIdentifiers: list = []
-    # catchmentGeoms: list = []
-    # # Loop thru each catchment returned
-    # while x < len(features):
-    #     # Add catchment IDs to list
-    #     catchmentIdentifiers.append(
-    #         int(features[x]['properties']['featureid'])
-    #     )
-    #     # If the catchment is multipoly (I know this is SUPER annoying)
-    #     if len(features[x]["geometry"]['coordinates']) > 1:
-    #         r = 0
-    #         while r < len(features[x]["geometry"]['coordinates']):
-    #             catchmentGeoms.append(
-    #                 Polygon(features[x]["geometry"]['coordinates'][r][0])
-    #             )
-    #             r += 1
-    #     else:  # Else, the catchment is a single polygon (as it should be)
-    #         catchmentGeoms.append(
-    #             Polygon(features[x]["geometry"]['coordinates'][0][0])
-    #         )
-    #     x += 1
-
-    # catchmentGeoms: shapely.MultiPolygon = MultiPolygon(catchmentGeoms)
-
-    # Remove duplicates from list of catchment IDs
-    # temp_list: list = []
-    # [temp_list.append(x) for x in catchmentIdentifiers if x not in temp_list]
-    # # reassign temp list
-    # catchmentIdentifiers = temp_list
-
-    # # Clean up
-    # del temp_list, r, resp, features, poly, payload
-
-    # return catchmentGeoms, catchmentIdentifiers
-
 
 def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
     """Request NHD Flowlines from NLDI with Catchment ID.
@@ -190,13 +124,13 @@ def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
     and retrieve all the flowlines downstream to the specified distance.
 
     Inputs:
-    catchmentIdentifiers: list of integers COMIDs
-    dist: float
+        catchmentIdentifiers: list of integers COMIDs
+        dist: float
 
     Returns:
-    flowlinesGeom: Shapely Multipolygon geometry
-    flowlineIDs: List of integer COMIDs
-    outlet_headnodes: List of coordinate pairs
+        flowlines: Geojson FeatureCollection
+        flowlineIDs: List of integer COMIDs
+        outlet_headnodes: List of coordinate pairs
     """
 
     nhdGeom: list = []
@@ -253,27 +187,21 @@ def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
             tonode_dict[feature['properties']['comid']] = feature['properties']['tonode']
             # Get comids
             flowlineIDs.append(feature['properties']['comid'])
-            # Convert the flowline to a geometry collection to be exported
-            # for coords in feature['geometry']['coordinates']:
-            #     nhdGeom.append([coord[0:2] for coord in coords])
 
         del result
 
     # Get the comids of flowlines that drain the fire polygon
-    outlets: tuple = find_out_flowline(tonode_dict, fromnode_list)
+    outlet_ids: tuple = find_out_flowline(tonode_dict, fromnode_list)
     # Get headnode coords of outlet flowlines
     outlet_headnodes = []
     for n in nhdGeom:
-        if n['properties']['comid'] in outlets:
+        if n['properties']['comid'] in outlet_ids:
             outlet_headnodes.append(n['geometry']['coordinates'][0][0])
-
-    # if dist == 0:
-    #     flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
 
     if dist > 0:
         payload = {'f': 'json', 'distance': dist}
 
-        for id in outlets:
+        for id in outlet_ids:
             # request downstream flowlines geometry NLDI
             r = requests.get(
                 NLDI_URL + str(id) + '/navigation/DM/flowlines', params=payload
@@ -281,11 +209,11 @@ def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
 
             try:
                 downstreamflowlines: dict = r.json()
-                
+
             except Exception:
                 if r.status_code == 200:
-                    print('Get downstream flowlines request failed with status \n'
-                        'code 200. Quiting nldi polygon query.')
+                    print('Get downstream flowlines request failed with status \
+                        code 200. Quiting nldi polygon query.')
 
                 else:
                     print('Quiting nldi polygon query. Error requesting \
@@ -293,16 +221,13 @@ def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
 
                 # Kill program if request fails.
                 sys.exit(1)
-            
+
             nhdGeom += downstreamflowlines['features']
             for feature in downstreamflowlines['features']:
                 # Get comids
                 flowlineIDs.append(int(feature['properties']['nhdplus_comid']))
-                # Get geometries
-                # nhdGeom.append(feature['geometry']['coordinates'])
-            del downstreamflowlines
 
-        # flowlinesGeom: shapely.MultiLineString = MultiLineString(nhdGeom)
+            del downstreamflowlines
 
     # Filter nhdGeoms for duplicates
     m = []
@@ -311,20 +236,23 @@ def get_flowlines(catchmentIdentifiers: list, dist: float) -> tuple:
     flowlines = {'type': 'FeatureCollection', 'features': m}
 
     # Clean up variables
-    del nhdGeom, fromnode_list, tonode_dict, outlets, m, r
+    del nhdGeom, fromnode_list, tonode_dict, outlet_ids, m, r
 
     return flowlines, flowlineIDs, outlet_headnodes
 
 
-def get_gages(data, outlet_headnodes: list, dist: float):
+def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
     '''Query the input polygon and donwstream flowlines for stream gages.
     The polygon query for gages requests gages from NLDI.
     The flowline query pulls gages from the StreamStats Navigation Services.
 
     Input:
+        data: A geojson FeatureCollection of the area of interest
+        outlet_headnodes: list of coordinates
+        dist: float of diatance values for tracing downstream
 
     Returns:
-
+        unique_gages: Geojson FeatureCollection of stream gages
     '''
 
     # Rough list of gages
@@ -362,9 +290,6 @@ def get_gages(data, outlet_headnodes: list, dist: float):
         if Point(g['geometry']['coordinates']).within(fire_poly):
             ss_gages.append(g)
 
-    print(len(ss_gages), 'gages in the fire polygon. Gettting donwstream gages.')
-
-    print('outlet_headnodes', outlet_headnodes)
     # Loop thru the outlet_headnodes and request gages downstream at dist
     for coords in outlet_headnodes:
         payload = [
@@ -440,20 +365,7 @@ def get_gages(data, outlet_headnodes: list, dist: float):
     unique_gages = []
     [unique_gages.append(x) for x in ss_gages if x not in unique_gages]
 
-    print(len(unique_gages), f"gages in fire polygon and {dist} km downstream")
-
     # Clean up
     del ss_gages, payload, fire_bounds_gages, fire_poly, coords, r
 
     return unique_gages
-
-
-def find_out_flowline(tonode_dict: dict, fromnode_list: list) -> tuple:
-    # Find all the flowlines that are outlets from the poly_query
-    outlets: list = []
-    for key in tonode_dict:
-        if not int(tonode_dict[key]) in fromnode_list:
-            outlets.append(int(key))
-
-    outlet_flowlines: tuple = tuple(outlets)
-    return outlet_flowlines

@@ -21,8 +21,8 @@ app.add_middleware(
 
 class Item(BaseModel):
     data: dict
-    get_flowlines: bool
-    get_gages: bool
+    return_flowlines: bool
+    return_gages: bool
     downstream_dist: float
 
 # Redirect root and /settings.SERVICE_NAME to the docs
@@ -37,12 +37,12 @@ async def query_poly(request: Item):
     # Use post operation to process geojson object with polygons to query.
     # Includes two additional params to use in the query.
     content = request.data
-    get_flowlines = request.get_flowlines
-    get_gages = request.get_flowlines
+    return_flowlines = request.return_flowlines
+    return_gages = request.return_gages
     downstream_dist = request.downstream_dist
 
     try:
-        results = Poly_Query(content, get_flowlines, get_gages, downstream_dist)
+        results = Poly_Query(content, return_flowlines, return_gages, downstream_dist)
         results = results.serialize()
 
         return results
