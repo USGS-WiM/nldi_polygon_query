@@ -57,11 +57,6 @@ class Item_Old(BaseModel):
     get_flowlines: bool
     downstream_dist: float
 
-# Redirect root and /settings.SERVICE_NAME to the docs
-@app.get("/", include_in_schema=False)
-def docs_redirect_root():
-    return RedirectResponse(url=app.docs_url)
-
 
 @app.post("/nldi_poly_query/")
 async def query_poly_old(request: Item_Old):

@@ -1,6 +1,7 @@
 import requests
 from shapely.geometry import Point, Polygon, shape, MultiPolygon
 import sys
+import xmltodict
 # import warnings
 # warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -390,3 +391,40 @@ def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
     del ss_gages, payload, fire_bounds_gages, fire_poly, coords, r
 
     return unique_gages
+
+
+def find_activate_gages(gages):
+
+    updated_gages = []
+    codes = ''
+    for g in gages:
+        try:
+            codes = codes+',' + g['properties']['Code']
+        except:
+            codes = codes+',' + g['properties']['identifier'][5:]
+
+    url = f"https://waterservices.usgs.gov/nwis/site/?format=mapper&sites={(codes)[1:]}&siteStatus=active"
+    r = requests.get(url)
+
+    r_dict = xmltodict.parse(r.text)
+    active_codes = []
+    if r.status_code == 200:
+        for i in r_dict['mapper']['sites']['site']:
+            active_codes.append(i['@sno'])
+
+    for g in gages:
+
+        if 'Code' in g['properties']:
+            if g['properties']['Code'] in active_codes:
+                g['properties']['active'] = True
+            else:
+                g['properties']['active'] = False
+        elif 'identifier' in g['properties']:
+            if g['properties']['identifier'][5:] in active_codes:
+                g['properties']['active'] = True
+            else:
+                g['properties']['active'] = False    
+
+        updated_gages.append(g)
+
+    return updated_gages

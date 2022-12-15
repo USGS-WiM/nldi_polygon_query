@@ -1,4 +1,4 @@
-from utils import get_catchments, get_flowlines, get_gages
+from utils import get_catchments, get_flowlines, get_gages, find_activate_gages
 
 
 class Poly_Query:
@@ -35,7 +35,9 @@ class Poly_Query:
 
         # If True, get gages
         if self.return_gages:
-            self.gages = get_gages(self.data, self.outlet_headnodes, self.downstream_dist)
+            gages = get_gages(self.data, self.outlet_headnodes, self.downstream_dist)
+            self.gages = find_activate_gages(gages)
+            del gages
 
     def serialize(self):
         '''Process the results and return a list of Json FeatureCollections.'''
