@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title='Polygon Querying of NLDI for catchments and flowlines',
-    docs_url='/docs'
+    root_path='/nldipolygonservices'
 )
 
 app.add_middleware(
@@ -28,8 +28,8 @@ class Item(BaseModel):
 
 # Redirect root and /settings.SERVICE_NAME to the docs
 @app.get("/", include_in_schema=False)
-def docs_redirect_root():
-    return RedirectResponse(url=app.docs_url)
+async def root():
+    return {"message": "Hello World"}
 
 
 @app.post("/nldi_poly_query_new/")
