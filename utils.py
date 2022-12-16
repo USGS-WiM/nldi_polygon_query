@@ -393,7 +393,7 @@ def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
     return unique_gages
 
 
-def find_activate_gages(gages):
+def find_active_gages(gages):
 
     updated_gages = []
     codes = ''

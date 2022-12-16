@@ -1,4 +1,4 @@
-from utils import get_catchments, get_flowlines, get_gages, find_activate_gages
+from utils import get_catchments, get_flowlines, get_gages, find_active_gages
 
 
 class Poly_Query:
@@ -36,7 +36,7 @@ class Poly_Query:
         # If True, get gages
         if self.return_gages:
             gages = get_gages(self.data, self.outlet_headnodes, self.downstream_dist)
-            self.gages = find_activate_gages(gages)
+            self.gages = find_active_gages(gages)
             del gages
 
     def serialize(self):

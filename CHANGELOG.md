@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/USGS-WiM/nldi_polygon_query/tree/dev)
 
+## [0.2.1] - 2022-12-16
+### Added
+- Added functionality to check the activate status of gages. 
+
+
 ## [0.2.0] - 2022-11-15
 ### Added 
-- Add functionality to query gages inside the area of interest and on downstream flowlines
+- Added functionality to query gages inside the area of interest and on downstream flowlines
 
 ### Changed  
 - The output object is now a list of GeoJson FeatureCollections: catchments, flowlines and gages
