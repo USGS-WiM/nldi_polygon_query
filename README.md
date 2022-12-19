@@ -55,13 +55,18 @@ Once the API is running locally, you can make requests to it. To use the API, a 
 
 ```bash
 import requests
+import json
 
-url = 'http://127.0.0.1:8000/nldi_poly_query'
+url = 'http://127.0.0.1:8000/nldi_poly_query_new/'
 
 file = {'file': open(<file path>, 'r')}
 
-params = {'get_flowlines': True, 'downstream_dist': 55}
-resp = requests.post(url=url, files=file, data=params) 
+json_path = <file path>
+with open(json_path, 'r') as f:
+    data = json.loads(f.read())
+
+params = {'data': data, 'return_flowlines': True, 'return_gages': True, 'downstream_dist': 55}
+resp = requests.post(url=url, json=params) 
 ```
 
 ## Development Workflow
