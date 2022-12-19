@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from poly_query import Poly_Query
 from poly_query_old import Poly_Query_Old
