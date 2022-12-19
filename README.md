@@ -64,16 +64,6 @@ params = {'get_flowlines': True, 'downstream_dist': 55}
 resp = requests.post(url=url, files=file, data=params) 
 ```
 
-## Building and testing
-
-Explain required node version
-
-`node -v` needs to be {version}
-
-Explain how to run the debugging 'watch' script for this repo, if applicable
-
-Explain how to run unit tests, if applicable
-
 ## Development Workflow
 
 An issue will be assigned to you via GitHub. Your workflow begins after assignment:

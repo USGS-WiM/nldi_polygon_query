@@ -109,7 +109,7 @@ def get_catchments(data: dict) -> tuple:
     # which overlap with the fire polygon
     catchments_list = []
     for g in all_catchments['features']:
-        for h, i in enumerate(fire_poly):
+        for h, i in enumerate(fire_poly.geoms):
             if shape(g['geometry']).intersects(i):
                 catchments_list.append(g)
 
@@ -308,7 +308,7 @@ def get_gages(data, outlet_headnodes: list, dist: float) -> dict:
 
     # Loop thru returned gages and make sure they fall within the fire polygon
     for g in fire_bounds_gages['features']:
-        for h, i in enumerate(fire_poly):
+        for h, i in enumerate(fire_poly.geoms):
             if Point(g['geometry']['coordinates']).within(i):
                 ss_gages.append(g)
 
@@ -409,8 +409,11 @@ def find_active_gages(gages):
     r_dict = xmltodict.parse(r.text)
     active_codes = []
     if r.status_code == 200:
-        for i in r_dict['mapper']['sites']['site']:
-            active_codes.append(i['@sno'])
+        if type(r_dict['mapper']['sites']['site']) is list:
+            for i in r_dict['mapper']['sites']['site']:
+                active_codes.append(i['@sno'])
+        elif type(r_dict['mapper']['sites']['site']) is dict:
+            active_codes.append(r_dict['mapper']['sites']['site']['@sno'])
 
     for g in gages:
 
@@ -423,7 +426,7 @@ def find_active_gages(gages):
             if g['properties']['identifier'][5:] in active_codes:
                 g['properties']['active'] = True
             else:
-                g['properties']['active'] = False    
+                g['properties']['active'] = False
 
         updated_gages.append(g)
 
