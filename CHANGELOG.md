@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased](https://github.com/USGS-WiM/nldi_polygon_query/tree/dev)
 
+## [0.2.2] - 2023-1-11
+### Removed
+- Removed the old version of the polygon query endpoint.
+
+
 ## [0.2.1] - 2022-12-16
 ### Added
 - Added functionality to check the activate status of gages. 

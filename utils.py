@@ -113,7 +113,6 @@ def get_catchments(data: dict) -> tuple:
             if shape(g['geometry']).intersects(i):
                 catchments_list.append(g)
 
-
     # Loop thru the remain catchments and grab the Comids
     catchmentIdentifiers = []
     for c in catchments_list:
