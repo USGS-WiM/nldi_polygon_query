@@ -23,16 +23,13 @@ class Poly_Query:
 
     def run(self):
         '''Run the Polygon Query.'''
-
         # Get the catchments that are overlapped by the polygon
         self.catchments, self.catchmentIDs = get_catchments(self.data)
-
         # Get flowlines
         if self.return_flowlines or self.return_gages:
             self.flowlines, self.flowlineIDs, self.outlet_headnodes = get_flowlines(
                 self.catchmentIDs, self.downstream_dist
             )
-
         # If True, get gages
         if self.return_gages:
             gages = get_gages(self.data, self.outlet_headnodes, self.downstream_dist)
