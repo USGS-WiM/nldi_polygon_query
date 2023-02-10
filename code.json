@@ -4,7 +4,7 @@
     "organization": "U.S. Geological Survey",
     "description": "A python package for querying the Network Linked Data Index with polygons for hydrography data.",
     "version": "v0.2.2",
-    "status": ["Development"],
+    "status": "Archival",
 
     "permissions": {
       "usageType": "openSource",
